@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import Image from "next/image";
 
+
+
 export default function Page() {
     const sideBarIconStyle = "hover:bg-gray-100 p-2 rounded hover:cursor-pointer";
     return (

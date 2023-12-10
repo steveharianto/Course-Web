@@ -1,6 +1,8 @@
 import Image from "next/image";
+import { useClient } from "next/client";
 
 export default function Page() {
+    useClient();
     const sideBarIconStyle = "hover:bg-gray-100 p-2 rounded hover:cursor-pointer";
     return (
         <div className="flex">
