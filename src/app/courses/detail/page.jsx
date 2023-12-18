@@ -1,9 +1,49 @@
 /* eslint-disable @next/next/no-img-element */
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { updateCourse } from "../../firebaseUtils";
 
 export default function Page() {
     const sideBarIconStyle = "hover:bg-gray-100 p-2 rounded hover:cursor-pointer";
     let isEnrolled = true;
+    const router = useRouter();
+    const [currentChapter, setCurrentChapter] = useState(1);
+
+    const currentClassCookie = Cookies.get("currentClass");
+    const userCookie = Cookies.get("user");
+    const user = userCookie ? JSON.parse(userCookie) : "";
+    const [currentClass, setCurrentClass] = useState(currentClassCookie ? JSON.parse(currentClassCookie) : "");
+
+    // Progress
+    let progress = 0;
+    let total = currentClass.chapters?.length;
+
+    if (currentClass.progress.hasOwnProperty(user.username)) {
+        progress = currentClass.progress[user.username].length;
+    }
+
+    const readChapter = (chapterIndex) => {
+        if (currentClass.progress[user.username]) {
+            if (!currentClass.progress[user.username].includes(chapterIndex)) {
+                let tempProgress = { ...currentClass.progress };
+                tempProgress[user.username].push(chapterIndex);
+                setCurrentClass({ ...currentClass, progress: tempProgress });
+            }
+        } else {
+            let tempProgress = currentClass.progress.length == 0 ? {} : { ...currentClass.progress };
+            tempProgress[user.username] = [];
+            tempProgress[user.username].push(chapterIndex);
+            setCurrentClass({ ...currentClass, progress: tempProgress });
+        }
+    };
+
+    useEffect(() => {
+        readChapter(currentClass.chapters[0].id);
+        updateCourse(currentClass.id, currentClass);
+        Cookies.set("currentClass", JSON.stringify(currentClass));
+    }, []);
 
     return (
         <div className="flex">
@@ -111,10 +151,37 @@ export default function Page() {
                 </div>
                 {isEnrolled && (
                     <div className="flex flex-col px-10">
+                        {/* Course Content */}
                         <div className="w-[60%] mx-auto bg-gray-200 rounded-lg p-4 flex flex-col">
-                            <p className="font-medium text-2xl mb-4">Title #1</p>
-                            <p className="text-justify">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Iure excepturi dolore labore aspernatur doloribus numquam, accusantium commodi ab quis minima laboriosam at et, fugit sunt reiciendis placeat? Fuga, tempore commodi.</p>
+                            <p className="font-medium text-2xl mb-4">{currentClass.title}</p>
+                            <p className="text-justify">{currentClass.description}</p>
                         </div>
+                        {/* Chapter Progress */}
+                        <p>{Math.round((progress / total) * 100)}%</p>
+
+                        <div className="bg-[#f8f4f4] h-4 w-full rounded">
+                            <div className={`h-full w-[${Math.round((progress / total) * 100)}%] bg-[#46a583] rounded`}></div>
+                        </div>
+                        {/* Chapter Headers */}
+                        <div className="w-full my-4 flex border-gray-200 border-b-2">
+                            {currentClass.chapters.map((chapter, index) => {
+                                return (
+                                    <button
+                                        key={index}
+                                        className={`w-32 ${chapter.id === currentChapter ? "border-b-[#46a583]" : "border-b-gray-300"} border-b-2 mb-[-2px]`}
+                                        onClick={() => {
+                                            setCurrentChapter(chapter.id);
+                                            readChapter(chapter.id);
+                                            updateCourse(currentClass.id, currentClass);
+                                            Cookies.set("currentClass", JSON.stringify(currentClass));
+                                        }}
+                                    >
+                                        <p className={`text-center font-bold ${chapter.id === currentChapter ? "text-[#46a583]" : "text-gray-300"}`}>{chapter.title}</p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div>{currentClass.chapters.find((c) => c.id === currentChapter).material}</div>
                     </div>
                 )}
                 {!isEnrolled && (
